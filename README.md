@@ -12,7 +12,7 @@ It is an alternative to the LiteLLM-based design in [`../ai-gateway-on-aws`](../
 
 The design analysis behind both designs is in [`../llm-gateway-comparison`](../llm-gateway-comparison/README.md) (English is authoritative), cited as `[CMP §n.n]`, `[CMP A-n]` (assumption) and `[CMP V-n]` (launch gate). The set follows the template in [`../llm-gateway-docs-template`](../llm-gateway-docs-template/README.md).
 
-**Status: design phase.** Nothing is built yet, and this repository holds no code or IaC. 00, 01, 02, 11 and the decision records are written as Drafts for review. 03–10 are stubs: they follow the template's structure, already describe this design rather than LiteLLM, and keep `[fill]` markers for what is decided during the build.
+**Status: design phase.** Nothing is built yet, and this repository holds no gateway code or IaC; the only code is the cost estimate generator in [`cost/tools/`](cost/tools/). 00, 01, 02, 11 and the decision records are written as Drafts for review. 03–10 are stubs: they follow the template's structure, already describe this design rather than LiteLLM, and keep `[fill]` markers for what is decided during the build.
 
 | # | Document | Answers | Owner |
 |---|---|---|---|
@@ -63,7 +63,33 @@ flowchart LR
 
 ## Cost estimate
 
-Not made yet. The infrastructure is a handful of serverless components (02 §12), so model usage dominates even more than in the LiteLLM design. When an estimate is needed, make it from [`../cost-estimate-template`](../cost-estimate-template/README.md), as `[LGW]` did in its `cost/` folder.
+[`cost/`](cost/) holds the v0.1 budget estimate for building the gateway and running it for 24 months, made from the template in [`../cost-estimate-template`](../cost-estimate-template/README.md). It keeps the schedule, usage basis (30 engineers), rates and parameters of the `[LGW]` estimate, so that its section 7 compares the two designs line by line. The workbooks are the master (English and Japanese); the markdown files are generated read-only snapshots of them.
+
+| Item | This design | `[LGW]` |
+|---|---:|---:|
+| Initial cost (JPY, excl. tax) | 41,509,110 | 43,820,838 |
+| Recurring cost per month | 1,400,096 | 3,019,657 |
+| Grand total, initial + 24 months | 75,111,414 | 116,292,612 |
+
+The build costs about the same; the saving is in running it. Model usage (about JPY 1.3 million a month at the expected scenario) is outside both totals.
+
+| File | What it is |
+|---|---|
+| `CostEstimate_IAMNativeLLMGateway_v0.1.xlsx`, `…_jp.xlsx` | The estimate workbooks: the template filled with this estimate's line items, assumptions and parameters |
+| `cost_estimate_IAMNativeLLMGateway_v0.1.md`, `…_jp.md` | Snapshots: the workbook sheets (sections 1–6) plus the comparison with `[LGW]`, model usage, options, sizing detail, open items and findings (7–12) |
+| `tools/model.py` | Every price, quantity and assumption of this estimate, the single source of its numbers, and the `[LGW]` figures it is compared with |
+| `tools/tx.py` | Pairs every English string with its Japanese text |
+| `tools/md.py` | The snapshot: the template's sections 1–6 with this estimate's notes, and sections 7–12 |
+| `tools/make.py` | Builds all four files and checks them |
+
+The generic work (filling the template, checking a filled workbook, calculating the Summary, rendering sections 1–6) is done by the scripts in the template repository's `tools/`. To regenerate the estimate after changing `model.py`, with `cost-estimate-template` cloned next to this repository (or `COST_ESTIMATE_TEMPLATE` set to its path):
+
+```sh
+pip install -r cost/tools/requirements.txt
+python cost/tools/make.py
+```
+
+`make.py` fills both workbooks, checks them against the template, recalculates their Summary and compares it with the model, and writes both snapshots. When `ai-gateway-on-aws` is cloned next to this repository (or `LGW_REPO` is set), it also recomputes the `[LGW]` estimate and checks the figures that section 7 quotes. It fails if a check fails or a Japanese string is missing. openpyxl does not calculate formulas, so open each workbook in Excel and check its totals before you share it.
 
 ## Who reads what
 
